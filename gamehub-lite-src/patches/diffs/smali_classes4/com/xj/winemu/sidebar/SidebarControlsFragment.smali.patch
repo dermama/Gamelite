@@ -1,0 +1,61 @@
+diff --git a/smali_classes4/com/xj/winemu/sidebar/SidebarControlsFragment.smali b/smali_classes4/com/xj/winemu/sidebar/SidebarControlsFragment.smali
+index b6c70a374..ec65cf1d5 100644
+--- a/smali_classes4/com/xj/winemu/sidebar/SidebarControlsFragment.smali
++++ b/smali_classes4/com/xj/winemu/sidebar/SidebarControlsFragment.smali
+@@ -2472,6 +2472,56 @@
+ 
+     invoke-virtual {p1, v0}, Lcom/xj/winemu/view/SidebarSwitchItemView;->setClickListener(Lkotlin/jvm/functions/Function0;)V
+ 
++    # RTS Touch Controls switch - use findViewById since not in binding
++    invoke-virtual {p0}, Landroidx/fragment/app/Fragment;->getView()Landroid/view/View;
++    move-result-object v0
++    if-eqz v0, :cond_skip_rts
++    
++    # Store root view for later use
++    move-object v2, v0
++    
++    const v1, 0x7f0a0e80
++    invoke-virtual {v0, v1}, Landroid/view/View;->findViewById(I)Landroid/view/View;
++    move-result-object v0
++    check-cast v0, Lcom/xj/winemu/view/SidebarSwitchItemView;
++    if-eqz v0, :cond_skip_rts
++    
++    invoke-static {}, Lcom/xj/pcvirtualbtn/inputcontrols/InputControlsManager;->getRtsTouchControlsEnabled()Z
++    move-result v1
++    invoke-virtual {v0, v1}, Lcom/xj/winemu/view/SidebarSwitchItemView;->setSwitch(Z)V
++    
++    new-instance v1, Lcom/xj/winemu/sidebar/RtsSwitchClickListener;
++    invoke-direct {v1, p0, v0}, Lcom/xj/winemu/sidebar/RtsSwitchClickListener;-><init>(Lcom/xj/winemu/sidebar/SidebarControlsFragment;Lcom/xj/winemu/view/SidebarSwitchItemView;)V
++    invoke-virtual {v0, v1}, Lcom/xj/winemu/view/SidebarSwitchItemView;->setClickListener(Lkotlin/jvm/functions/Function0;)V
++    
++    # Find gear button and set up click listener
++    const v1, 0x7f0a0e82
++    invoke-virtual {v2, v1}, Landroid/view/View;->findViewById(I)Landroid/view/View;
++    move-result-object v1
++    check-cast v1, Landroid/widget/ImageButton;
++    if-eqz v1, :cond_skip_rts
++    
++    # Set gear button click listener
++    new-instance v3, Lcom/xj/winemu/sidebar/RtsGestureSettingsClickListener;
++    invoke-direct {v3, p0}, Lcom/xj/winemu/sidebar/RtsGestureSettingsClickListener;-><init>(Lcom/xj/winemu/sidebar/SidebarControlsFragment;)V
++    invoke-virtual {v1, v3}, Landroid/view/View;->setOnClickListener(Landroid/view/View$OnClickListener;)V
++    
++    # Set gear button visibility based on RTS enabled state
++    invoke-static {}, Lcom/xj/pcvirtualbtn/inputcontrols/InputControlsManager;->getRtsTouchControlsEnabled()Z
++    move-result v3
++    if-eqz v3, :cond_gear_gone
++    
++    # RTS enabled - show gear button
++    const/4 v3, 0x0
++    invoke-virtual {v1, v3}, Landroid/view/View;->setVisibility(I)V
++    goto :cond_skip_rts
++    
++    :cond_gear_gone
++    # RTS disabled - hide gear button
++    const/16 v3, 0x8
++    invoke-virtual {v1, v3}, Landroid/view/View;->setVisibility(I)V
++    
++    :cond_skip_rts
+     invoke-virtual {p0}, Lcom/xj/base/base/fragment/BaseVmFragment;->T()Landroidx/databinding/ViewDataBinding;
+ 
+     move-result-object p1

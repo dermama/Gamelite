@@ -1,0 +1,21 @@
+diff --git a/smali_classes4/com/winemu/core/controller/X11Controller.smali b/smali_classes4/com/winemu/core/controller/X11Controller.smali
+index d35419214..38a426891 100644
+--- a/smali_classes4/com/winemu/core/controller/X11Controller.smali
++++ b/smali_classes4/com/winemu/core/controller/X11Controller.smali
+@@ -748,3 +748,16 @@
+     :cond_1
+     return-void
+ .end method
++
++.method public final setTrackpadInputMode(I)V
++    .locals 1
++
++    iget-object v0, p0, Lcom/winemu/core/controller/X11Controller;->b:Lcom/winemu/core/input/TouchInputManager;
++
++    if-eqz v0, :cond_end
++
++    invoke-virtual {v0, p1}, Lcom/winemu/core/input/TouchInputManager;->A(I)V
++
++    :cond_end
++    return-void
++.end method

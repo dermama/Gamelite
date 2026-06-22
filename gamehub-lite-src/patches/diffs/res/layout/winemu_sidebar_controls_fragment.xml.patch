@@ -1,0 +1,15 @@
+diff --git a/res/layout/winemu_sidebar_controls_fragment.xml b/res/layout/winemu_sidebar_controls_fragment.xml
+index 65f220893..203786ab4 100644
+--- a/res/layout/winemu_sidebar_controls_fragment.xml
++++ b/res/layout/winemu_sidebar_controls_fragment.xml
+@@ -13,6 +13,10 @@
+             <com.xj.common.view.focus.focus.view.FocusableRecyclerView android:id="@id/rv_mapping" android:background="@drawable/winemu_bg_mapping_rv" android:padding="@dimen/dp_4" android:visibility="gone" android:layout_width="fill_parent" android:layout_height="wrap_content" android:layout_marginBottom="@dimen/dp_8" />
+             <com.xj.winemu.view.SidebarSwitchItemView android:id="@id/switch_touch_screen_mouse_control" android:layout_width="fill_parent" android:layout_height="@dimen/dp_56" app:switch_title="@string/winemu_sidebar_touch_screen_mouse_control" />
+             <com.xj.winemu.view.SidebarProgressItemView android:id="@id/key_cursor_speed" android:layout_width="fill_parent" android:layout_height="wrap_content" app:side_max="250" app:side_min="10" app:side_progress="100" app:side_title="@string/winemu_sidebar_key_mouse_speed" />
++            <LinearLayout android:orientation="horizontal" android:id="@id/rts_controls_container" android:layout_width="fill_parent" android:layout_height="@dimen/dp_56" android:gravity="center_vertical">
++                <com.xj.winemu.view.SidebarSwitchItemView android:id="@id/switch_rts_touch_controls" android:layout_width="0dp" android:layout_height="@dimen/dp_56" android:layout_weight="1" app:switch_title="@string/winemu_sidebar_rts_touch_controls" />
++                <ImageButton android:id="@id/btn_rts_gesture_settings" android:layout_width="@dimen/dp_40" android:layout_height="@dimen/dp_40" android:layout_marginEnd="@dimen/dp_8" android:background="?android:attr/selectableItemBackgroundBorderless" android:src="@drawable/ic_settings" android:contentDescription="@string/rts_gesture_settings" android:visibility="gone" />
++            </LinearLayout>
+         </com.xj.common.view.focus.focus.view.FocusableLinearLayout>
+     </com.xj.common.view.focus.focus.view.FocusableNestedScrollView>
+ </com.xj.common.view.focus.focus.view.FocusableLinearLayout>

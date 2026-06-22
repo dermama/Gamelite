@@ -1,0 +1,35 @@
+diff --git a/smali_classes4/com/winemu/openapi/WinUIBridge.smali b/smali_classes4/com/winemu/openapi/WinUIBridge.smali
+index 8ada83959..85fefcff4 100644
+--- a/smali_classes4/com/winemu/openapi/WinUIBridge.smali
++++ b/smali_classes4/com/winemu/openapi/WinUIBridge.smali
+@@ -2370,11 +2370,8 @@
+
+     if-nez v0, :cond_0
+
+-    const-string v0, "x11Controller"
+-
+-    invoke-static {v0}, Lkotlin/jvm/internal/Intrinsics;->y(Ljava/lang/String;)V
+-
+-    const/4 v0, 0x0
++    # X11Controller is null - just return silently instead of throwing
++    return-void
+
+     :cond_0
+     move-object v1, v0
+@@ -2678,3 +2675,16 @@
+     :goto_2
+     return-void
+ .end method
++
++.method public final setTrackpadInputMode(I)V
++    .locals 1
++
++    iget-object v0, p0, Lcom/winemu/openapi/WinUIBridge;->k:Lcom/winemu/core/controller/X11Controller;
++
++    if-eqz v0, :cond_end
++
++    invoke-virtual {v0, p1}, Lcom/winemu/core/controller/X11Controller;->setTrackpadInputMode(I)V
++
++    :cond_end
++    return-void
++.end method

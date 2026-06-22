@@ -1,0 +1,190 @@
+diff --git a/smali_classes5/com/xj/pcvirtualbtn/inputcontrols/InputControlsManager.smali b/smali_classes5/com/xj/pcvirtualbtn/inputcontrols/InputControlsManager.smali
+index 59d561a3f..58a38c0e4 100644
+--- a/smali_classes5/com/xj/pcvirtualbtn/inputcontrols/InputControlsManager.smali
++++ b/smali_classes5/com/xj/pcvirtualbtn/inputcontrols/InputControlsManager.smali
+@@ -76,6 +76,185 @@
+     return-void
+ .end method
+ 
++.method public static getRtsTouchControlsEnabled()Z
++    .locals 3
++
++    invoke-static {}, Lcom/xj/pcvirtualbtn/inputcontrols/InputControlsManager;->z()Lcom/tencent/mmkv/MMKV;
++
++    move-result-object v0
++
++    const-string v1, "sp_k_enable_rts_touch_controls_global"
++
++    const/4 v2, 0x0
++
++    invoke-virtual {v0, v1, v2}, Lcom/tencent/mmkv/MMKV;->c(Ljava/lang/String;Z)Z
++
++    move-result v0
++
++    return v0
++.end method
++
++.method public static setRtsTouchControlsEnabled(Z)V
++    .locals 2
++
++    invoke-static {}, Lcom/xj/pcvirtualbtn/inputcontrols/InputControlsManager;->z()Lcom/tencent/mmkv/MMKV;
++
++    move-result-object v0
++
++    const-string v1, "sp_k_enable_rts_touch_controls_global"
++
++    invoke-virtual {v0, v1, p0}, Lcom/tencent/mmkv/MMKV;->v(Ljava/lang/String;Z)Z
++
++    return-void
++.end method
++
++# RTS Gesture Configuration Methods
++
++.method public static getRtsGestureEnabled(Ljava/lang/String;)Z
++    .locals 4
++    # p0 = gesture name (TAP, LONG_PRESS, DOUBLE_TAP, DRAG, PINCH, TWO_FINGER_DRAG)
++    # Returns true if gesture is enabled (default: true)
++
++    invoke-static {}, Lcom/xj/pcvirtualbtn/inputcontrols/InputControlsManager;->z()Lcom/tencent/mmkv/MMKV;
++    move-result-object v0
++    
++    # Null check - return default (true) if MMKV not available
++    if-nez v0, :cond_mmkv_ok
++    const/4 v0, 0x1
++    return v0
++    :cond_mmkv_ok
++
++    new-instance v1, Ljava/lang/StringBuilder;
++    invoke-direct {v1}, Ljava/lang/StringBuilder;-><init>()V
++    const-string v2, "sp_k_rts_gesture_enabled_"
++    invoke-virtual {v1, v2}, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
++    invoke-virtual {v1, p0}, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
++    invoke-virtual {v1}, Ljava/lang/StringBuilder;->toString()Ljava/lang/String;
++    move-result-object v1
++
++    const/4 v2, 0x1
++    invoke-virtual {v0, v1, v2}, Lcom/tencent/mmkv/MMKV;->c(Ljava/lang/String;Z)Z
++    move-result v0
++
++    return v0
++.end method
++
++.method public static setRtsGestureEnabled(Ljava/lang/String;Z)V
++    .locals 3
++    # p0 = gesture name, p1 = enabled
++
++    invoke-static {}, Lcom/xj/pcvirtualbtn/inputcontrols/InputControlsManager;->z()Lcom/tencent/mmkv/MMKV;
++    move-result-object v0
++    
++    # Null check - skip if MMKV not available
++    if-nez v0, :cond_mmkv_ok
++    return-void
++    :cond_mmkv_ok
++
++    new-instance v1, Ljava/lang/StringBuilder;
++    invoke-direct {v1}, Ljava/lang/StringBuilder;-><init>()V
++    const-string v2, "sp_k_rts_gesture_enabled_"
++    invoke-virtual {v1, v2}, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
++    invoke-virtual {v1, p0}, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
++    invoke-virtual {v1}, Ljava/lang/StringBuilder;->toString()Ljava/lang/String;
++    move-result-object v1
++
++    invoke-virtual {v0, v1, p1}, Lcom/tencent/mmkv/MMKV;->v(Ljava/lang/String;Z)Z
++
++    return-void
++.end method
++
++.method public static getRtsGestureAction(Ljava/lang/String;)I
++    .locals 4
++    # p0 = gesture name
++    # Returns action index (0 = default action for that gesture)
++    # For PINCH: 0=SCROLL_WHEEL, 1=PLUS_MINUS, 2=PAGE_UP_DOWN
++    # For TWO_FINGER_DRAG: 0=MIDDLE_MOUSE, 1=WASD, 2=ARROW_KEYS
++
++    invoke-static {}, Lcom/xj/pcvirtualbtn/inputcontrols/InputControlsManager;->z()Lcom/tencent/mmkv/MMKV;
++    move-result-object v0
++    
++    # Null check - return default (0) if MMKV not available
++    if-nez v0, :cond_mmkv_ok
++    const/4 v0, 0x0
++    return v0
++    :cond_mmkv_ok
++
++    new-instance v1, Ljava/lang/StringBuilder;
++    invoke-direct {v1}, Ljava/lang/StringBuilder;-><init>()V
++    const-string v2, "sp_k_rts_gesture_action_"
++    invoke-virtual {v1, v2}, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
++    invoke-virtual {v1, p0}, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
++    invoke-virtual {v1}, Ljava/lang/StringBuilder;->toString()Ljava/lang/String;
++    move-result-object v1
++
++    const/4 v2, 0x0
++    invoke-virtual {v0, v1, v2}, Lcom/tencent/mmkv/MMKV;->e(Ljava/lang/String;I)I
++    move-result v0
++
++    return v0
++.end method
++
++.method public static setRtsGestureAction(Ljava/lang/String;I)V
++    .locals 3
++    # p0 = gesture name, p1 = action index
++
++    invoke-static {}, Lcom/xj/pcvirtualbtn/inputcontrols/InputControlsManager;->z()Lcom/tencent/mmkv/MMKV;
++    move-result-object v0
++    
++    # Null check - skip if MMKV not available
++    if-nez v0, :cond_mmkv_ok
++    return-void
++    :cond_mmkv_ok
++
++    new-instance v1, Ljava/lang/StringBuilder;
++    invoke-direct {v1}, Ljava/lang/StringBuilder;-><init>()V
++    const-string v2, "sp_k_rts_gesture_action_"
++    invoke-virtual {v1, v2}, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
++    invoke-virtual {v1, p0}, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
++    invoke-virtual {v1}, Ljava/lang/StringBuilder;->toString()Ljava/lang/String;
++    move-result-object v1
++
++    invoke-virtual {v0, v1, p1}, Lcom/tencent/mmkv/MMKV;->q(Ljava/lang/String;I)Z
++
++    return-void
++.end method
++
++.method public static resetRtsGestureSettings()V
++    .locals 3
++    # Reset all gesture settings to defaults
++
++    invoke-static {}, Lcom/xj/pcvirtualbtn/inputcontrols/InputControlsManager;->z()Lcom/tencent/mmkv/MMKV;
++    move-result-object v0
++    
++    # Null check - skip if MMKV not available
++    if-nez v0, :cond_mmkv_ok
++    return-void
++    :cond_mmkv_ok
++
++    # Remove all gesture enabled keys
++    const-string v1, "sp_k_rts_gesture_enabled_TAP"
++    invoke-virtual {v0, v1}, Lcom/tencent/mmkv/MMKV;->x(Ljava/lang/String;)V
++    const-string v1, "sp_k_rts_gesture_enabled_LONG_PRESS"
++    invoke-virtual {v0, v1}, Lcom/tencent/mmkv/MMKV;->x(Ljava/lang/String;)V
++    const-string v1, "sp_k_rts_gesture_enabled_DOUBLE_TAP"
++    invoke-virtual {v0, v1}, Lcom/tencent/mmkv/MMKV;->x(Ljava/lang/String;)V
++    const-string v1, "sp_k_rts_gesture_enabled_DRAG"
++    invoke-virtual {v0, v1}, Lcom/tencent/mmkv/MMKV;->x(Ljava/lang/String;)V
++    const-string v1, "sp_k_rts_gesture_enabled_PINCH"
++    invoke-virtual {v0, v1}, Lcom/tencent/mmkv/MMKV;->x(Ljava/lang/String;)V
++    const-string v1, "sp_k_rts_gesture_enabled_TWO_FINGER_DRAG"
++    invoke-virtual {v0, v1}, Lcom/tencent/mmkv/MMKV;->x(Ljava/lang/String;)V
++
++    # Remove all gesture action keys
++    const-string v1, "sp_k_rts_gesture_action_PINCH"
++    invoke-virtual {v0, v1}, Lcom/tencent/mmkv/MMKV;->x(Ljava/lang/String;)V
++    const-string v1, "sp_k_rts_gesture_action_TWO_FINGER_DRAG"
++    invoke-virtual {v0, v1}, Lcom/tencent/mmkv/MMKV;->x(Ljava/lang/String;)V
++
++    return-void
++.end method
++
+ .method public static A(Ljava/lang/String;)Z
+     .locals 3
+ 

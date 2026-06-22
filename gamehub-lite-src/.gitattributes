@@ -1,0 +1,3 @@
+# Force LF line endings for all text files
+# Prevents CRLF issues that break bash scripts and patch application
+* text=auto eol=lf

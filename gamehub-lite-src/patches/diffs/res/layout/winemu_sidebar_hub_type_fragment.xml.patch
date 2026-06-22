@@ -1,0 +1,13 @@
+--- a/res/layout/winemu_sidebar_hub_type_fragment.xml
++++ b/res/layout/winemu_sidebar_hub_type_fragment.xml
+@@ -11,6 +11,10 @@
+             </com.xj.common.view.focus.focus.view.FocusableLinearLayout>
+             <com.xj.winemu.view.SidebarSwitchItemView android:id="@id/hdr_switch" android:layout_width="fill_parent" android:layout_height="@dimen/dp_56" app:switch_title="HDR" />
+             <com.xj.winemu.view.SidebarSwitchItemView android:id="@id/crt_switch" android:layout_width="fill_parent" android:layout_height="@dimen/dp_56" app:switch_title="@string/winemu_crt_display_effect" />
++            <LinearLayout android:gravity="center_vertical" android:orientation="horizontal" android:id="@id/frame_gen_container" android:layout_width="fill_parent" android:layout_height="@dimen/dp_56">
++                <com.xj.winemu.view.SidebarSwitchItemView android:id="@id/switch_frame_gen" android:layout_width="0.0dip" android:layout_height="@dimen/dp_56" android:layout_weight="1.0" app:switch_title="@string/bh_framegen_title" />
++                <ImageButton android:id="@id/btn_frame_gen_settings" android:background="?android:selectableItemBackgroundBorderless" android:visibility="gone" android:layout_width="@dimen/dp_40" android:layout_height="@dimen/dp_40" android:src="@drawable/winemu_ic_setting_focus_white" android:contentDescription="@string/bh_framegen_settings_open" android:layout_marginEnd="@dimen/dp_8" />
++            </LinearLayout>
+             <com.xj.winemu.view.SidebarSwitchItemView android:id="@id/super_resolution_switch" android:layout_width="fill_parent" android:layout_height="@dimen/dp_56" app:switch_title="@string/winemu_super_resolution" />
+             <com.xj.common.view.focus.focus.view.FocusableLinearLayout android:orientation="vertical" android:id="@id/calliper_progress_fl" android:paddingBottom="@dimen/dp_8" android:layout_width="fill_parent" android:layout_height="wrap_content">
+                 <com.hjq.shape.view.ShapeTextView android:textSize="@dimen/sp_14" android:id="@id/calliper_progress_tv" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/dp_8" android:text="@string/winemu_clarity" android:layout_marginStart="@dimen/dp_12" app:shape_textColor="#ff888e99" app:shape_textSelectedColor="#fff0f0f0" />

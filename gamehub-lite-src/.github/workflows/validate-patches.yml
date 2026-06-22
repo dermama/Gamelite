@@ -1,0 +1,139 @@
+name: Validate Patches
+
+on:
+  pull_request:
+    paths:
+      - 'patches/**'
+
+jobs:
+  validate-patches:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install validation tools
+        run: |
+          pip install unidiff
+          sudo apt-get install -y patchutils
+
+      - name: Check patch file encodings
+        run: |
+          errors=0
+          while IFS= read -r -d '' patch_file; do
+            encoding=$(file -b --mime-encoding "$patch_file")
+            if [[ "$encoding" != "us-ascii" && "$encoding" != "utf-8" ]]; then
+              echo "::error file=${patch_file}::Invalid encoding: ${encoding} (must be UTF-8 or ASCII)"
+              errors=$((errors + 1))
+            fi
+            # Check for UTF-8 BOM
+            if [ "$(head -c 3 "$patch_file" | xxd -p)" = "efbbbf" ]; then
+              echo "::error file=${patch_file}::File contains UTF-8 BOM (byte order mark)"
+              errors=$((errors + 1))
+            fi
+          done < <(find patches/diffs -name '*.patch' -print0)
+          if [ $errors -gt 0 ]; then
+            echo "::error::Found $errors encoding issue(s)"
+            exit 1
+          fi
+          echo "All patch files have valid encoding"
+
+      - name: Check trailing newlines on manifest files
+        run: |
+          errors=0
+          for f in patches/files_to_patch.txt patches/files_to_add.txt patches/files_to_delete.txt; do
+            if [ -f "$f" ] && [ -s "$f" ]; then
+              if [ "$(tail -c 1 "$f" | wc -l)" -eq 0 ]; then
+                echo "::error file=${f}::Missing trailing newline - last entry may be silently skipped by bash read"
+                errors=$((errors + 1))
+              fi
+            fi
+          done
+          if [ $errors -gt 0 ]; then
+            exit 1
+          fi
+          echo "All manifest files have trailing newlines"
+
+      - name: Check for orphaned patches
+        run: |
+          errors=0
+
+          # Patch files not listed in files_to_patch.txt
+          while IFS= read -r -d '' patch_file; do
+            rel_path="${patch_file#patches/diffs/}"
+            target_file="${rel_path%.patch}"
+            if ! grep -qxF "$target_file" patches/files_to_patch.txt; then
+              echo "::error file=${patch_file}::Orphaned patch - not listed in files_to_patch.txt"
+              errors=$((errors + 1))
+            fi
+          done < <(find patches/diffs -name '*.patch' -print0)
+
+          # Entries in files_to_patch.txt without a matching patch or binary replacement
+          while IFS= read -r target_file; do
+            [ -z "$target_file" ] && continue
+            patch_path="patches/diffs/${target_file}.patch"
+            binary_path="patches/binary_replacements/${target_file}"
+            if [ ! -f "$patch_path" ] && [ ! -f "$binary_path" ]; then
+              echo "::error file=patches/files_to_patch.txt::Missing patch for listed file: $target_file"
+              errors=$((errors + 1))
+            fi
+          done < patches/files_to_patch.txt
+
+          if [ $errors -gt 0 ]; then
+            echo "::error::Found $errors orphaned/missing patch(es)"
+            exit 1
+          fi
+          echo "All patches are properly tracked in manifests"
+
+      - name: Validate patch syntax
+        run: |
+          python3 << 'PYEOF'
+          import os, sys
+          from unidiff import PatchSet
+          from unidiff.errors import UnidiffParseError
+
+          errors = 0
+          warnings = 0
+          patches_dir = 'patches/diffs'
+
+          for root, dirs, files in os.walk(patches_dir):
+              for fname in sorted(files):
+                  if not fname.endswith('.patch'):
+                      continue
+                  fpath = os.path.join(root, fname)
+                  try:
+                      patch = PatchSet.from_filename(fpath, encoding='utf-8')
+                      if len(patch) == 0:
+                          print(f'::warning file={fpath}::Empty patch (no hunks)')
+                          warnings += 1
+                  except UnidiffParseError as e:
+                      print(f'::error file={fpath}::Invalid patch syntax: {e}')
+                      errors += 1
+                  except UnicodeDecodeError as e:
+                      print(f'::error file={fpath}::Encoding error: {e}')
+                      errors += 1
+
+          if errors > 0:
+              print(f'::error::Found {errors} invalid patch file(s)')
+              sys.exit(1)
+
+          print(f'All patch files have valid unified diff syntax ({warnings} warning(s))')
+          PYEOF
+
+      - name: Validate patch structure with lsdiff
+        run: |
+          errors=0
+          while IFS= read -r -d '' patch_file; do
+            if ! lsdiff "$patch_file" > /dev/null 2>&1; then
+              echo "::error file=${patch_file}::lsdiff cannot parse patch structure"
+              errors=$((errors + 1))
+            fi
+          done < <(find patches/diffs -name '*.patch' -print0)
+          if [ $errors -gt 0 ]; then
+            exit 1
+          fi
+          echo "All patch files pass structural validation"

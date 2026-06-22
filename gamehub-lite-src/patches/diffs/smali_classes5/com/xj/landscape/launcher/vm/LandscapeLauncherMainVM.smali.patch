@@ -1,0 +1,21 @@
+--- a/smali_classes5/com/xj/landscape/launcher/vm/LandscapeLauncherMainVM.smali
++++ b/smali_classes5/com/xj/landscape/launcher/vm/LandscapeLauncherMainVM.smali
+@@ -572,16 +572,9 @@
+     return-void
+ .end method
+
++# GHL: Patched to skip cloud gaming checkUserTimer HTTP call instead of stubbing the api endpoint
+ .method public final r()V
+-    .locals 2
+-
+-    iget-object v0, p0, Lcom/xj/landscape/launcher/vm/LandscapeLauncherMainVM;->g:Lcom/xj/landscape/launcher/data/repository/HomeInfoRepository;
+-
+-    new-instance v1, Lcom/xj/landscape/launcher/vm/n;
+-
+-    invoke-direct {v1, p0}, Lcom/xj/landscape/launcher/vm/n;-><init>(Lcom/xj/landscape/launcher/vm/LandscapeLauncherMainVM;)V
+-
+-    invoke-virtual {v0, v1}, Lcom/xj/landscape/launcher/data/repository/HomeInfoRepository;->d(Lkotlin/jvm/functions/Function1;)Lcom/drake/net/scope/NetCoroutineScope;
++    .locals 0
+
+     return-void
+ .end method

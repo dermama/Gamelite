@@ -1,0 +1,9 @@
+# Ignore log and scratch files
+*.log
+.gemini/
+scratch/
+temp_snapshot.tar.gz
+*.tmp
+work/
+output/
+apk/GameHub-*.apk

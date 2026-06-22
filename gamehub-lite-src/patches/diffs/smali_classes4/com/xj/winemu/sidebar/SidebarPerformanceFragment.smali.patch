@@ -1,0 +1,16 @@
+--- a/smali_classes4/com/xj/winemu/sidebar/SidebarPerformanceFragment.smali
++++ b/smali_classes4/com/xj/winemu/sidebar/SidebarPerformanceFragment.smali
+@@ -3165,3 +3165,13 @@
+     :cond_1
+     return-void
+ .end method
++
++.method public onResume()V
++    .locals 0
++
++    invoke-super {p0}, Lcom/xj/common/view/focus/focus/app/FocusableFragment;->onResume()V
++
++    invoke-static {p0}, Lcom/xj/winemu/sidebar/BhFrameGenWiring;->bindFromFragment(Ljava/lang/Object;)V
++
++    return-void
++.end method

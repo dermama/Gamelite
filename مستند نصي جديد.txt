@@ -1,0 +1,122 @@
+للأسف التوكن يبدو غير صالح (Invalid username or password). لكن لا يهم — سأضع الخطة بناءً على ما نعرفه عن HF Spaces.
+🎯 الخطة المتكاملة: GameHub Lite + Hugging Face Hybrid
+📊 تحليل البيئات
+المكون
+CPU
+GPU
+RAM
+تخزين
+Latency
+🔑 الاستنتاج الحاسم
+الهاتف أقوى بكثير في GPU و CPU. المشكلة الوحيدة هي التخزين. الحل الأذكى ليس "تقاسم أدوار" بل استخدام HF Space كتخزين سحابي ذكي + معالجة مهام الخلفية.
+📋 الخطة — 5 مراحل
+المرحلة 1: HF كتخزين سحابي للألعاب ✅ (ممكن فوراً)
+HF Space (Docker Server)
+  ┌─────────────────────────┐
+  │  Nginx + File Server    │
+  │  Game Files (.iso, .7z) │ ← مخزنة هنا (50GB)
+  │  GameHub Extension API  │ ← يعالج طلبات التحميل
+  └──────────┬──────────────┘
+             │ HTTP/HTTPS
+             ▼
+  GameHub Lite (معدل)
+  ┌─────────────────────────┐
+  │  Download Manager       │ ← يسحب اللعبة من HF
+  │  تشغيل محلي بـ Wine     │ ← يستخدم GPU الهاتف 🏆
+  └─────────────────────────┘
+التعديلات المطلوبة:
+- إضافة Download Manager في GameHub Lite (extension Java)
+- إنشاء HF Space مع Docker + Nginx لتوزيع الملفات
+- واجهة لتصفح الألعاب المتاحة
+المدة التقريبية: أسبوع
+المرحلة 2: تشغيل الألعاب الخفيفة عن بُعد (للألعاب القديمة)
+HF Space (paid: T4 GPU $0.40/سا)
+  ┌────────────────────────┐
+  │  Wine + Box86          │ ← يشغل اللعبة
+  │  Xvfb + VirtualGL      │ ← شاشة وهمية + GPU
+  │  WebRTC (Janus/Mediasoup) │ ← بث الفيديو
+  └────────┬───────────────┘
+           │ WebRTC (low latency)
+           ▼
+  GameHub Lite (Streaming Client)
+  ┌────────────────────────┐
+  │  WebRTC Player         │ ← يستقبل البث
+  │  Touch→Mouse/Keyboard  │ ← إرسال الأوامر
+  └────────────────────────┘
+التعديلات:
+- إضافة WebRTC Client في GameHub
+- إنشاء Docker Space مع Wine + Xvfb + WebRTC server
+- Touch controls معدلة للـ streaming
+ملاحظة مهمة: هذا الخيار يدفع فلوس ($0.40/سا +)
+المرحلة 3: الذكاء الهجين — Auto Selector ⭐ (الأفضل)
+عند تشغيل لعبة:
+  ┌──────────────────────────────┐
+  │ هل تخزين اللعبة موجود محلياً؟ │
+  └──────┬───────┬───────────────┘
+        NO      YES
+         │       │
+         ▼       ▼
+    اسحب من HF  ─────────┐
+    إلى التخزين المؤقت    │
+         │               │
+         ▼               ▼
+    ┌─────────────────────────┐
+    │ هل RAM كافي + GPU مناسب؟│
+    └──────┬─────────┬────────┘
+           NO        YES
+            │         │
+            ▼         ▼
+    شغّل عن بُعد    شغّل محلياً
+    (HF Space)     (GPU الهاتف 🏆)
+التعديلات:
+- خوارزمية اتخاذ قرار مدمجة في التطبيق
+- تقييم أداء الجهاز قبل التشغيل
+- تبديل شفاف بين local و remote
+المرحلة 4: Smart Caching + Prefetch (تحسين الأداء)
+- التطبيق يحلل أنماط اللعب ويقوم بـ prefetch للملفات من HF
+- Caching ذكي: يحتفظ بالملفات الأكثر استخداماً
+- تقسيم الملفات: يحمل أجزاء اللعبة حسب الحاجة (مشابه لـ Steam's streaming)
+المرحلة 5: Cloud Processing for Heavy Tasks 
+بعض المهام ترسل لـ HF:
+- تثبيت Wine Prefix (يحتاج CPU + تخزين)
+- تجميع Shaders (يحتاج وقت + تخزين)
+- تحويل الفيديو (إنشاء intro / preview)
+- إدارة الـ Mods (تخزين + ترتيب)
+🛠️ التعديلات المطلوبة على الكود
+سأقسمها حسب الأولوية:
+Phase 1 — تعديلات على GameHub Lite:
+  ├─ extension/
+  │   ├─ GameDownloader.java      ← تحميل من HF
+  │   ├─ StorageManager.java      ← إدارة التخزين المؤقت
+  │   └─ HfApiClient.java         ← التواصل مع API
+  ├─ patches/new_files/
+  │   ├─ res/layout/download.xml  ← واجهة التحميل
+  │   └─ res/values/strings.xml   ← نصوص جديدة
+  └─ patches/ (تعديلات smali لربط extension)
+
+Phase 2 — HF Space (Docker):
+  ├─ Dockerfile                    ← Wine + Xvfb + server
+  ├─ hf_server.py                  ← API للتحكم بالجلسات
+  ├─ nginx.conf                    ← توزيع الملفات
+  └─ start.sh                      ← تشغيل الخادم
+
+Phase 3 — GitHub Actions:
+  └─ .github/workflows/build.yml  ← بناء APK تلقائي
+⏱️ الجدول الزمني المقترح
+المرحلة
+1 — تخزين + تحميل
+2 — تشغيل عن بُعد
+3 — Auto Selector
+4 — Smart Cache
+5 — Cloud Processing
+💎 التوصية النهائية  ابدأ بالمرحلة 1 فقط — وهي الأكثر فائدة وعملية:
+1. تعديل GameHub Lite لتحميل الألعاب من HF Space (تخزين)
+2. تشغيلها محلياً باستخدام GPU الهاتف القوي
+3. هذا يعطي أفضل أداء لأن GPU الهاتف أسرع بكثير من أي GPU سحابي بهالسعر
+المرحلة 2 (Remote Play) تحتاج GPU مدفوع ومعقدة تقنياً.
+المراحل 3-5 تحسينات إضافية.
+🔑 سؤال قبل نبدأ
+التوكن اللي أرسلته يبدو غير صالح. هل تريد:
+1. تتحقق من التوكن وتجرب إنشاء واحد جديد على https://huggingface.co/settings/tokens
+2. نبدأ بالمرحلة 1 مباشرة بدون HF (نضيف تحميل من أي مصدر)؟
+وما رأيك في الخطة؟

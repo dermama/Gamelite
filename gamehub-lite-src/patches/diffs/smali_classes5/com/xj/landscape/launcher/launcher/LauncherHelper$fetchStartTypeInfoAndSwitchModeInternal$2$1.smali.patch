@@ -1,0 +1,13 @@
+--- a/smali_classes5/com/xj/landscape/launcher/launcher/LauncherHelper$fetchStartTypeInfoAndSwitchModeInternal$2$1.smali
++++ b/smali_classes5/com/xj/landscape/launcher/launcher/LauncherHelper$fetchStartTypeInfoAndSwitchModeInternal$2$1.smali
+@@ -1091,10 +1091,6 @@
+     :goto_9
+     invoke-virtual {v0}, Ljava/lang/Throwable;->printStackTrace()V
+ 
+-    instance-of v0, v0, Lcom/drake/net/exception/NetUnknownHostException;
+-
+-    if-eqz v0, :cond_14
+-
+     invoke-static {v13}, Lkotlin/coroutines/jvm/internal/Boxing;->a(Z)Ljava/lang/Boolean;
+ 
+     move-result-object v0

@@ -1,0 +1,25 @@
+--- a/smali_classes5/com/xj/landscape/launcher/vm/GameDetailVM.smali
++++ b/smali_classes5/com/xj/landscape/launcher/vm/GameDetailVM.smali
+@@ -1478,17 +1478,11 @@
+
+     invoke-virtual {p1, v4}, Lcom/xj/common/data/gameinfo/GameDetailEntity;->setCurrentOpenType(I)V
+
+-    sget-object v4, Lcom/xj/game/entity/UserSteamGameState;->Downloaded:Lcom/xj/game/entity/UserSteamGameState;
+-
+-    if-eq p2, v4, :cond_d
+-
+-    sget-object v4, Lcom/xj/game/entity/UserSteamGameState;->ImportedByTool:Lcom/xj/game/entity/UserSteamGameState;
+-
+-    if-eq p2, v4, :cond_d
+-
+-    sget-object v4, Lcom/xj/game/entity/UserSteamGameState;->ImportedByUser:Lcom/xj/game/entity/UserSteamGameState;
+-
+-    if-ne p2, v4, :cond_f
++    # GHL: Patched to skip auto-deletion of game after returning from game session
++    # This prevents the game from being deleted when it crashes with full Steam client
++    # Original code checked for Downloaded/ImportedByTool/ImportedByUser states and called
++    # uninstallPcDemoGame, which incorrectly deleted games after a crash, this is an attempt to fix that
++    goto :cond_f
+
+     :cond_d
+     invoke-virtual {p1}, Lcom/xj/common/data/gameinfo/GameDetailEntity;->getId()I

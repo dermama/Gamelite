@@ -1,0 +1,23 @@
+--- a/res/values/styles.xml
++++ b/res/values/styles.xml
+@@ -3066,9 +3066,6 @@
+     </style>
+     <style name="CheckBox" parent="@android:style/Widget.CompoundButton.CheckBox">
+         <item name="android:textSize">@dimen/sp_16</item>
+-    </style>
+-    <style name="CloudProgressStyle" parent="@style/Widget.AppCompat.ProgressBar.Horizontal">
+-        <item name="android:progressDrawable">@drawable/cloud_progress_bar_style</item>
+     </style>
+     <style name="ComboBox">
+         <item name="android:textSize">@dimen/mw_14sp</item>
+@@ -7979,5 +7976,10 @@
+     </style>
+     <style name="xja_ShapeRadioButtonStyle" parent="@style/Widget.AppCompat.CompoundButton.RadioButton">
+         <item name="xja_shape_buttonDrawable">@drawable/xja_shape_view_placeholder</item>
++    </style>
++    <style name="RtsGestureConfigDialogTheme" parent="@style/_XPopup_TransparentDialog">
++        <item name="colorControlActivated">#ff3b82f6</item>
++        <item name="colorAccent">#ff3b82f6</item>
++        <item name="android:colorControlActivated">#ff3b82f6</item>
+     </style>
+ </resources>
