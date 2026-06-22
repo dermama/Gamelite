@@ -56,10 +56,7 @@ jobs:
           
           if [ ! -f "gamehub-lite-src/apk/GameHub-5.1.0.apk" ]; then
             echo "Downloading GameHub-5.1.0 APK from official releases..."
-            # Try the official Producdevity/gamehub-lite release first
-            curl -fL "https://github.com/Producdevity/gamehub-lite/releases/download/5.1.0/GameHub-5.1.0.apk" \
-              -o gamehub-lite-src/apk/GameHub-5.1.0.apk 2>/dev/null || \
-            curl -fL "https://github.com/Producdevity/gamehub-lite/releases/download/v5.1.0/GameHub-5.1.0.apk" \
+            curl -fL "https://github.com/Producdevity/gamehub-lite/releases/download/v5.1.0-patch/GameHub-5.1.0.apk" \
               -o gamehub-lite-src/apk/GameHub-5.1.0.apk 2>/dev/null || true
             
             if [ ! -f "gamehub-lite-src/apk/GameHub-5.1.0.apk" ] || [ ! -s "gamehub-lite-src/apk/GameHub-5.1.0.apk" ]; then
