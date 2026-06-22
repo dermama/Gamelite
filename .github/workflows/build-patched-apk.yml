@@ -26,7 +26,7 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
-      # 4. Cache Gradle packages
+      # 4. Cache Gradle packages (kept for potential future use)
       - name: Cache Gradle
         uses: actions/cache@v4
         with:
@@ -36,12 +36,6 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
-
-      # 5. Compile Java extension files using Gradle helper (for syntax verification)
-      - name: Compile Extension Code
-        run: |
-          cd compiler-helper
-          gradle jar
 
       # 6. Setup Apktool and Baksmali
       - name: Setup Build Tools
@@ -55,18 +49,25 @@ jobs:
           chmod +x build-tools-bin/apktool
           echo "$(pwd)/build-tools-bin" >> $GITHUB_PATH
 
-      # 7. Prepare Original APK
+      # 5. Prepare Original APK - Download from official GitHub release
       - name: Prepare Original APK
         run: |
           mkdir -p gamehub-lite-src/apk
           
-          # We try to download a verified copy of original GameHub 5.1.0 from community repositories
-          # If download fails, it uses preloaded files if user uploaded them
           if [ ! -f "gamehub-lite-src/apk/GameHub-5.1.0.apk" ]; then
-            echo "Original APK not found in repo. Downloading official mirror..."
-            curl -L "https://github.com/dermama/Gamelite/releases/download/v1.0/GameHub-5.1.0.apk" -o gamehub-lite-src/apk/GameHub-5.1.0.apk || \
-            curl -L "https://github.com/gamehublite/gamehub-oss/releases/download/v5.1.0/GameHub-5.1.0.apk" -o gamehub-lite-src/apk/GameHub-5.1.0.apk || \
-            echo "Warning: Download failed. You must upload apk/GameHub-5.1.0.apk to build."
+            echo "Downloading GameHub-5.1.0 APK from official releases..."
+            # Try the official Producdevity/gamehub-lite release first
+            curl -fL "https://github.com/Producdevity/gamehub-lite/releases/download/5.1.0/GameHub-5.1.0.apk" \
+              -o gamehub-lite-src/apk/GameHub-5.1.0.apk 2>/dev/null || \
+            curl -fL "https://github.com/Producdevity/gamehub-lite/releases/download/v5.1.0/GameHub-5.1.0.apk" \
+              -o gamehub-lite-src/apk/GameHub-5.1.0.apk 2>/dev/null || true
+            
+            if [ ! -f "gamehub-lite-src/apk/GameHub-5.1.0.apk" ] || [ ! -s "gamehub-lite-src/apk/GameHub-5.1.0.apk" ]; then
+              echo "ERROR: Could not download GameHub-5.1.0.apk. Please upload it as a release asset at:"
+              echo "       https://github.com/dermama/Gamelite/releases/new"
+              exit 1
+            fi
+            echo "APK downloaded: $(du -sh gamehub-lite-src/apk/GameHub-5.1.0.apk)"
           fi
 
       # 8. Setup Keystore credentials and folders
@@ -136,17 +137,33 @@ jobs:
           
           # Extract android.jar classes for compilation classpath
           ANDROID_JAR=$(find $ANDROID_HOME/platforms -name android.jar | head -n 1)
+          echo "Using Android JAR: $ANDROID_JAR"
           
           mkdir -p build-out/classes
           
-          # Compile Java extension classes
-          javac -source 8 -target 8 -cp "$ANDROID_JAR" -d build-out/classes gamehub-lite-src/extension/*.java
+          # Compile Java extension classes directly with javac
+          # Use -source/-target 8 for Android compatibility
+          # Suppress warnings about bootstrap classpath to keep logs clean
+          javac -source 8 -target 8 \
+            -Xlint:-options \
+            -cp "$ANDROID_JAR" \
+            -d build-out/classes \
+            gamehub-lite-src/extension/HybridConnection.java \
+            gamehub-lite-src/extension/TaskRouter.java \
+            gamehub-lite-src/extension/CacheManager.java \
+            gamehub-lite-src/extension/CloudFSProvider.java \
+            gamehub-lite-src/extension/MemorySnapshotter.java \
+            gamehub-lite-src/extension/HybridInitializer.java
           
-          # Generate classes.dex
+          echo "Compiled classes:"
+          find build-out/classes -name "*.class" | head -20
+          
+          # Generate classes.dex using d8
           $D8_PATH --release --output build-out/ $(find build-out/classes -name "*.class")
           
-          # Verify classes.dex exists
+          # Verify classes.dex exists and has content
           ls -la build-out/classes.dex
+          echo "DEX size: $(du -sh build-out/classes.dex)"
 
       # 13. Rebuild and Pack APK
       - name: Rebuild APK
