@@ -1,0 +1,190 @@
+name: Build Patched GameHub Lite Nexus APK
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout codebase
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # 2. Setup Java 17 for Gradle and Apktool
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      # 3. Setup Android SDK
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      # 4. Cache Gradle packages
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      # 5. Compile Java extension files using Gradle helper (for syntax verification)
+      - name: Compile Extension Code
+        run: |
+          cd compiler-helper
+          gradle jar
+
+      # 6. Setup Apktool and Baksmali
+      - name: Setup Build Tools
+        run: |
+          mkdir -p build-tools-bin
+          wget https://github.com/iBotPeaches/Apktool/releases/download/v2.9.3/apktool_2.9.3.jar -O build-tools-bin/apktool.jar
+          wget https://repo1.maven.org/maven2/org/smali/baksmali/2.5.2/baksmali-2.5.2.jar -O build-tools-bin/baksmali.jar
+          
+          # Create direct apktool script wrapper in path
+          echo -e '#!/bin/bash\njava -jar "'"$(pwd)"'/build-tools-bin/apktool.jar" "$@"' > build-tools-bin/apktool
+          chmod +x build-tools-bin/apktool
+          echo "$(pwd)/build-tools-bin" >> $GITHUB_PATH
+
+      # 7. Prepare Original APK
+      - name: Prepare Original APK
+        run: |
+          mkdir -p gamehub-lite-src/apk
+          
+          # We try to download a verified copy of original GameHub 5.1.0 from community repositories
+          # If download fails, it uses preloaded files if user uploaded them
+          if [ ! -f "gamehub-lite-src/apk/GameHub-5.1.0.apk" ]; then
+            echo "Original APK not found in repo. Downloading official mirror..."
+            curl -L "https://github.com/dermama/Gamelite/releases/download/v1.0/GameHub-5.1.0.apk" -o gamehub-lite-src/apk/GameHub-5.1.0.apk || \
+            curl -L "https://github.com/gamehublite/gamehub-oss/releases/download/v5.1.0/GameHub-5.1.0.apk" -o gamehub-lite-src/apk/GameHub-5.1.0.apk || \
+            echo "Warning: Download failed. You must upload apk/GameHub-5.1.0.apk to build."
+          fi
+
+      # 8. Setup Keystore credentials and folders
+      - name: Setup Signing Keystore
+        run: |
+          mkdir -p gamehub-lite-src/keystore
+          keytool -genkey -v -keystore gamehub-lite-src/keystore/debug.keystore \
+              -alias androiddebugkey \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000 \
+              -storepass android \
+              -keypass android \
+              -dname "CN=GameHub Lite, OU=Community, O=GameHub Lite, L=Unknown, S=Unknown, C=XX"
+
+      # 9. Decompile APK
+      - name: Decompile APK
+        run: |
+          cd gamehub-lite-src
+          apktool d -f apk/GameHub-5.1.0.apk -o work/decompiled
+
+      # 10. Inject Smali hook into MainActivity.smali
+      - name: Inject Hybrid Hook
+        run: |
+          python gamehub-lite-src/inject-hook.py gamehub-lite-src/work/decompiled
+
+      # 11. Run patcher deletions, additions, and binary diffs
+      - name: Apply GameHub Lite Patches
+        run: |
+          # Deletion list
+          cd gamehub-lite-src/work/decompiled
+          while IFS= read -r file; do
+              rm -rf "$file"
+          done < ../../patches/files_to_delete.txt
+          
+          # Add layout files
+          mkdir -p res/layout
+          cp ../../../gamehub-patches/patches/new_files/res/layout/hybrid_hud.xml res/layout/hybrid_hud.xml
+          
+          # Apply original smali patches
+          while IFS= read -r file; do
+              patch_file="../../patches/diffs/$file.patch"
+              target="$file"
+              if [ -f "$patch_file" ] && [ -f "$target" ]; then
+                  patch -s -N "$target" < "$patch_file" || echo "Warning: skipped patch for $file"
+              fi
+          done < "../../patches/files_to_patch.txt"
+          
+          # Apply binary replacements
+          if [ -d "../../patches/binary_replacements" ]; then
+              cp -r "../../patches/binary_replacements/"* .
+          fi
+          
+          # Apply new files additions
+          if [ -d "../../patches/new_files" ]; then
+              cp -r "../../patches/new_files/"* .
+          fi
+          
+          cd ../../..
+
+      # 12. Compile extension Java files to DEX and inject into APK zip
+      - name: Compile and Inject Extension Dex
+        run: |
+          # Locate d8 tool
+          D8_PATH=$(find $ANDROID_HOME/build-tools -name d8 | head -n 1)
+          echo "Found d8 at: $D8_PATH"
+          
+          # Extract android.jar classes for compilation classpath
+          ANDROID_JAR=$(find $ANDROID_HOME/platforms -name android.jar | head -n 1)
+          
+          mkdir -p build-out/classes
+          
+          # Compile Java extension classes
+          javac -source 8 -target 8 -cp "$ANDROID_JAR" -d build-out/classes gamehub-lite-src/extension/*.java
+          
+          # Generate classes.dex
+          $D8_PATH --release --output build-out/ $(find build-out/classes -name "*.class")
+          
+          # Verify classes.dex exists
+          ls -la build-out/classes.dex
+
+      # 13. Rebuild and Pack APK
+      - name: Rebuild APK
+        run: |
+          cd gamehub-lite-src
+          apktool b work/decompiled -o work/unsigned.apk
+          
+          # Find next classesN.dex number
+          next=2
+          while unzip -l work/unsigned.apk 2>/dev/null | grep -qE "classes${next}\.dex$"; do
+              next=$((next + 1))
+          done
+          
+          # Zip the hybrid extension classes.dex as the next DEX partition
+          cp ../build-out/classes.dex ../classes${next}.dex
+          zip -j -q work/unsigned.apk ../classes${next}.dex
+          
+          # Clean temp file
+          rm -f ../classes${next}.dex
+          
+          # Align APK
+          ZIPALIGN_PATH=$(find $ANDROID_HOME/build-tools -name zipalign | head -n 1)
+          mkdir -p output
+          $ZIPALIGN_PATH -f -p 4 work/unsigned.apk output/GameHub-Lite-Nexus.apk
+
+      # 14. Sign the finalized APK
+      - name: Sign Patched APK
+        run: |
+          APKSIGNER_PATH=$(find $ANDROID_HOME/build-tools -name apksigner | head -n 1)
+          $APKSIGNER_PATH sign --ks gamehub-lite-src/keystore/debug.keystore \
+              --ks-pass "pass:android" \
+              --ks-key-alias "androiddebugkey" \
+              --out gamehub-lite-src/output/GameHub-Lite-Nexus-Signed.apk \
+              gamehub-lite-src/output/GameHub-Lite-Nexus.apk
+
+      # 15. Upload completed patched APK artifact
+      - name: Upload Output APK Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gamehub-lite-nexus-patched-apk
+          path: gamehub-lite-src/output/GameHub-Lite-Nexus-Signed.apk
